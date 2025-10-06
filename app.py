@@ -1,19 +1,40 @@
 import streamlit as st
 import numpy as np
 import cv2
+import os
+import gdown
 from tensorflow.keras.models import load_model
 import joblib
+
+# --------------------------
+# Auto-download models from Google Drive
+# --------------------------
+os.makedirs("models", exist_ok=True)
+
+# Google Drive file links (convert view URL → direct download URL)
+urls = {
+    "unet_model.h5": "https://drive.google.com/uc?id=186VbXe-MgQutqwXsvCCddKOuAF93mrR_",
+    "ensemble_model.pkl": "https://drive.google.com/uc?id=1mEpPNckyAS7Ud6enp5LEq7bDSQVHJVl7",
+    "label_encoder.pkl": "https://drive.google.com/uc?id=13hCEDrj8gX0jkemVEkL1LwN3g4BZOJFV"
+}
+
+# Download only if not already present
+for filename, url in urls.items():
+    filepath = os.path.join("models", filename)
+    if not os.path.exists(filepath):
+        st.info(f"📥 Downloading {filename} ...")
+        gdown.download(url, filepath, quiet=False)
 
 # --------------------------
 # Model Loading
 # --------------------------
 IMG_SIZE = 128
-model = load_model("unet_model.h5")
+model = load_model("models/unet_model.h5")
 
 # Load ensemble model and encoder if available
 try:
-    ensemble_model = joblib.load("ensemble_model.pkl")
-    label_encoder = joblib.load("label_encoder.pkl")
+    ensemble_model = joblib.load("models/ensemble_model.pkl")
+    label_encoder = joblib.load("models/label_encoder.pkl")
     ensemble_available = True
 except:
     ensemble_available = False
@@ -39,7 +60,7 @@ def classify_blockage(mask):
     for thr in thresholds:
         binary_mask = (mask > thr).astype("uint8")
         area = np.sum(binary_mask)
-        if area > 200:  
+        if area > 200:
             lumen_area_raw = area
             chosen_thr = thr
             break
@@ -49,11 +70,11 @@ def classify_blockage(mask):
         chosen_thr = 0.1
 
     if lumen_area_raw < 1000:
-        correction_factor = 20   
+        correction_factor = 20
     elif lumen_area_raw < 3000:
-        correction_factor = 30  
+        correction_factor = 30
     else:
-        correction_factor = 40  
+        correction_factor = 40
 
     lumen_area = lumen_area_raw * correction_factor
     severe_thr = 9000
@@ -152,7 +173,7 @@ if uploaded_file is not None:
 
     elif mode == "AML (Ensemble Model)":
         if not ensemble_available:
-            st.error("⚠️ Ensemble model not found! Please train and save ensemble_model.pkl first.")
+            st.error("⚠️ Ensemble model not found! Please check model links or files.")
         else:
             features = extract_features(pred_mask)
             pred_class = ensemble_model.predict(features)[0]
