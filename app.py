@@ -33,7 +33,7 @@ def download_from_drive(file_id, dest_path):
 os.makedirs("models", exist_ok=True)
 
 file_ids = {
-    "unet_model.zip": "18Rg0UMBtBLDw-8XM7j2shxt2qpERb7RK",  # your ZIP file
+    "unet_model.zip": "1KfbJefLAH0LBc01C_37T5C5Q1cuV1rnw",  # your ZIP file
     "ensemble_model.pkl": "1mEpPNckyAS7Ud6enp5LEq7bDSQVHJVl7",
     "label_encoder.pkl": "13hCEDrj8gX0jkemVEkL1LwN3g4BZOJFV"
 }
@@ -237,6 +237,7 @@ st.markdown("""
 ---
 💡 <span style="color:#1ABC9C;">Powered by U-Net + KBIS + Ensemble Learning (AML)</span> | © 2025 CISKA Research
 """, unsafe_allow_html=True)
+
 
 
 
