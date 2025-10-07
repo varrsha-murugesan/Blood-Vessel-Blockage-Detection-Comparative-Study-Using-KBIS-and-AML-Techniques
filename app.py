@@ -59,14 +59,18 @@ else:
     model = load_model(model_path)
     st.success("✅ U-Net model loaded successfully!")
 
-# Load ensemble model + encoder
+import pickle
+
 try:
-    ensemble_model = joblib.load("models/ensemble_model.pkl")
-    label_encoder = joblib.load("models/label_encoder.pkl")
+    with open("models/ensemble_model.pkl", "rb") as f:
+        ensemble_model = pickle.load(f, encoding="latin1")
+    with open("models/label_encoder.pkl", "rb") as f:
+        label_encoder = pickle.load(f, encoding="latin1")
     ensemble_available = True
 except Exception as e:
-    st.warning(f"⚠️ Could not load ensemble: {e}")
+    st.warning(f"⚠️ Could not load ensemble components: {e}")
     ensemble_available = False
+
 
 # --------------------------
 # Global Settings
@@ -76,12 +80,32 @@ IMG_SIZE = 128
 # --------------------------
 # Preprocessing
 # --------------------------
+from PIL import Image
+import io
+
 def preprocess_image(uploaded_file):
-    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-    img = cv2.imdecode(file_bytes, cv2.IMREAD_GRAYSCALE)
-    img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
-    norm_img = img / 255.0
-    return img, np.expand_dims(norm_img, axis=(0, -1))
+    try:
+        # Read image bytes
+        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+        img = cv2.imdecode(file_bytes, cv2.IMREAD_GRAYSCALE)
+
+        # 🔁 Reset file pointer if OpenCV failed
+        if img is None:
+            uploaded_file.seek(0)
+            pil_img = Image.open(uploaded_file).convert("L")
+            img = np.array(pil_img)
+
+        # Resize + normalize
+        img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
+        norm_img = img / 255.0
+
+        # Return both versions
+        return img.astype("uint8"), np.expand_dims(norm_img, axis=(0, -1))
+
+    except Exception as e:
+        st.error(f"⚠️ Image preprocessing failed: {e}")
+        st.stop()
+
 
 # --------------------------
 # KBIS Rule-based Reasoning
@@ -230,6 +254,7 @@ st.markdown("""
 ---
 💡 <span style="color:#1ABC9C;">Powered by U-Net + KBIS + Ensemble Learning (AML)</span> | © 2025 CISKA Research
 """, unsafe_allow_html=True)
+
 
 
 
