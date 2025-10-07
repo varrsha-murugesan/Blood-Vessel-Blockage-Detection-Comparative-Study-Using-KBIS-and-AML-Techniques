@@ -5,7 +5,11 @@ import os
 from tensorflow.keras.models import load_model
 import joblib
 import requests
+import zipfile
 
+# --------------------------
+# Google Drive download helper
+# --------------------------
 def download_from_drive(file_id, dest_path):
     """Bypass Google Drive virus-scan confirmation"""
     URL = "https://drive.google.com/uc?export=download"
@@ -23,19 +27,33 @@ def download_from_drive(file_id, dest_path):
                 f.write(chunk)
     return dest_path
 
+# --------------------------
+# Model download setup
+# --------------------------
 os.makedirs("models", exist_ok=True)
+
 file_ids = {
-    "unet_model.h5": "186VbXe-MgQutqwXsvCCddKOuAF93mrR_",
+    "unet_model.zip": "18Rg0UMBtBLDw-8XM7j2shxt2qpERb7RK",  # your ZIP file
     "ensemble_model.pkl": "1mEpPNckyAS7Ud6enp5LEq7bDSQVHJVl7",
     "label_encoder.pkl": "13hCEDrj8gX0jkemVEkL1LwN3g4BZOJFV"
 }
 
+# Download each file if missing
 for filename, fid in file_ids.items():
     filepath = os.path.join("models", filename)
     if not os.path.exists(filepath):
         st.info(f"📥 Downloading {filename} ... please wait")
         download_from_drive(fid, filepath)
         st.success(f"✅ {filename} downloaded successfully.")
+
+# --------------------------
+# Unzip the U-Net model
+# --------------------------
+zip_path = os.path.join("models", "unet_model.zip")
+if os.path.exists(zip_path):
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall("models")
+    st.success("📦 Unzipped model files successfully!")
 
 
 # --------------------------
@@ -209,5 +227,6 @@ st.markdown("""
 ---
 💡 <span style="color:#1ABC9C;">Powered by U-Net + KBIS + Ensemble Learning (AML)</span> | © 2025 CISKA Research
 """, unsafe_allow_html=True)
+
 
 
