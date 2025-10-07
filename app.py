@@ -28,7 +28,7 @@ def download_from_drive(file_id, dest_path):
     return dest_path
 
 # --------------------------
-# Model download setup
+# Model download, extraction, and loading (safe version)
 # --------------------------
 os.makedirs("models", exist_ok=True)
 
@@ -38,7 +38,7 @@ file_ids = {
     "label_encoder.pkl": "13hCEDrj8gX0jkemVEkL1LwN3g4BZOJFV"
 }
 
-# Download each file if missing
+# Download files if missing
 for filename, fid in file_ids.items():
     filepath = os.path.join("models", filename)
     if not os.path.exists(filepath):
@@ -46,29 +46,39 @@ for filename, fid in file_ids.items():
         download_from_drive(fid, filepath)
         st.success(f"✅ {filename} downloaded successfully.")
 
-# --------------------------
-# Unzip the U-Net model
-# --------------------------
+# Unzip U-Net model if needed
 zip_path = os.path.join("models", "unet_model.zip")
 if os.path.exists(zip_path):
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        zip_ref.extractall("models")
-    st.success("📦 Unzipped model files successfully!")
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall("models")
+        st.success("📦 Unzipped model successfully!")
+    except zipfile.BadZipFile:
+        st.error("❌ The U-Net ZIP file seems corrupted. Please re-upload it to Drive.")
+        st.stop()
 
+# Load U-Net model
+model_path = "models/unet_model.h5"
+if not os.path.exists(model_path):
+    st.error("❌ U-Net model file not found after extraction!")
+    st.stop()
+else:
+    model = load_model(model_path)
+    st.success("✅ U-Net model loaded successfully!")
 
-# --------------------------
-# Model Loading
-# --------------------------
-IMG_SIZE = 128
-model = load_model("models/unet_model.h5")
-
-# Load ensemble model and encoder if available
+# Load ensemble model and label encoder
 try:
     ensemble_model = joblib.load("models/ensemble_model.pkl")
     label_encoder = joblib.load("models/label_encoder.pkl")
     ensemble_available = True
-except:
+except Exception as e:
+    st.warning(f"⚠️ Could not load ensemble components: {e}")
     ensemble_available = False
+
+# --------------------------
+# Global Settings
+# --------------------------
+IMG_SIZE = 128
 
 # --------------------------
 # Preprocessing
@@ -227,6 +237,7 @@ st.markdown("""
 ---
 💡 <span style="color:#1ABC9C;">Powered by U-Net + KBIS + Ensemble Learning (AML)</span> | © 2025 CISKA Research
 """, unsafe_allow_html=True)
+
 
 
 
