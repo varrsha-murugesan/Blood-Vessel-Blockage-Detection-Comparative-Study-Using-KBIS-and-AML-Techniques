@@ -30,50 +30,42 @@ def download_from_drive(file_id, dest_path):
 # --------------------------
 # Model download, extraction, and loading (safe version)
 # --------------------------
+# --------------------------  
+# Model download, loading (no zip)  
+# --------------------------
+
 os.makedirs("models", exist_ok=True)
 
 file_ids = {
-    "unet_model.zip": "1KfbJefLAH0LBc01C_37T5C5Q1cuV1rnw",
+    "unet_model.h5": "1op3ApQ50GOvH_p3CFRkvQfxJMOEywcSu",
     "ensemble_model.pkl": "1mEpPNckyAS7Ud6enp5LEq7bDSQVHJVl7",
     "label_encoder.pkl": "13hCEDrj8gX0jkemVEkL1LwN3g4BZOJFV"
 }
 
-
-# Download files if missing
-for filename, fid in file_ids.items():
-    filepath = os.path.join("models", filename)
-    if not os.path.exists(filepath):
-        st.info(f"📥 Downloading {filename} ... please wait")
-        download_from_drive(fid, filepath)
-        st.success(f"✅ {filename} downloaded successfully.")
-
-# Unzip U-Net model if needed
-zip_path = os.path.join("models", "unet_model.zip")
-if os.path.exists(zip_path):
-    try:
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall("models")
-        st.success("📦 Unzipped model successfully!")
-    except zipfile.BadZipFile:
-        st.error("❌ The U-Net ZIP file seems corrupted. Please re-upload it to Drive.")
-        st.stop()
+# Download models if missing
+for fname, fid in file_ids.items():
+    path = os.path.join("models", fname)
+    if not os.path.exists(path):
+        st.info(f"📥 Downloading {fname} ... please wait")
+        download_from_drive(fid, path)
+        st.success(f"✅ {fname} downloaded successfully.")
 
 # Load U-Net model
 model_path = "models/unet_model.h5"
 if not os.path.exists(model_path):
-    st.error("❌ U-Net model file not found after extraction!")
+    st.error("❌ U-Net model file not found!")
     st.stop()
 else:
     model = load_model(model_path)
     st.success("✅ U-Net model loaded successfully!")
 
-# Load ensemble model and label encoder
+# Load ensemble model + encoder
 try:
     ensemble_model = joblib.load("models/ensemble_model.pkl")
     label_encoder = joblib.load("models/label_encoder.pkl")
     ensemble_available = True
 except Exception as e:
-    st.warning(f"⚠️ Could not load ensemble components: {e}")
+    st.warning(f"⚠️ Could not load ensemble: {e}")
     ensemble_available = False
 
 # --------------------------
@@ -238,6 +230,7 @@ st.markdown("""
 ---
 💡 <span style="color:#1ABC9C;">Powered by U-Net + KBIS + Ensemble Learning (AML)</span> | © 2025 CISKA Research
 """, unsafe_allow_html=True)
+
 
 
 
