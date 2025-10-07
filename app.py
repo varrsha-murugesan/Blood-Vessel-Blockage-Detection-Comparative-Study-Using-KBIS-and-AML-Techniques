@@ -9,21 +9,42 @@ import joblib
 # --------------------------
 # Auto-download models from Google Drive
 # --------------------------
-os.makedirs("models", exist_ok=True)
+# --------------------------
+# Auto-download models from Google Drive (safe version)
+# --------------------------
+import requests
 
-# Google Drive file links (convert view URL → direct download URL)
-urls = {
-    "unet_model.h5": "https://drive.google.com/uc?id=186VbXe-MgQutqwXsvCCddKOuAF93mrR_",
-    "ensemble_model.pkl": "https://drive.google.com/uc?id=1mEpPNckyAS7Ud6enp5LEq7bDSQVHJVl7",
-    "label_encoder.pkl": "https://drive.google.com/uc?id=13hCEDrj8gX0jkemVEkL1LwN3g4BZOJFV"
+def download_from_drive(file_id, dest_path):
+    """Bypass Google Drive virus-scan confirmation"""
+    URL = "https://drive.google.com/uc?export=download"
+    session = requests.Session()
+    response = session.get(URL, params={'id': file_id}, stream=True)
+    token = None
+    for key, value in response.cookies.items():
+        if key.startswith('download_warning'):
+            token = value
+    if token:
+        response = session.get(URL, params={'id': file_id, 'confirm': token}, stream=True)
+    with open(dest_path, "wb") as f:
+        for chunk in response.iter_content(32768):
+            if chunk:
+                f.write(chunk)
+    return dest_path
+
+os.makedirs("models", exist_ok=True)
+file_ids = {
+    "unet_model.h5": "186VbXe-MgQutqwXsvCCddKOuAF93mrR_",
+    "ensemble_model.pkl": "1mEpPNckyAS7Ud6enp5LEq7bDSQVHJVl7",
+    "label_encoder.pkl": "13hCEDrj8gX0jkemVEkL1LwN3g4BZOJFV"
 }
 
-# Download only if not already present
-for filename, url in urls.items():
+for filename, fid in file_ids.items():
     filepath = os.path.join("models", filename)
     if not os.path.exists(filepath):
-        st.info(f"📥 Downloading {filename} ...")
-        gdown.download(url, filepath, quiet=False)
+        st.info(f"📥 Downloading {filename} ... please wait")
+        download_from_drive(fid, filepath)
+        st.success(f"✅ {filename} downloaded successfully.")
+
 
 # --------------------------
 # Model Loading
@@ -196,3 +217,4 @@ st.markdown("""
 ---
 💡 <span style="color:#1ABC9C;">Powered by U-Net + KBIS + Ensemble Learning (AML)</span> | © 2025 CISKA Research
 """, unsafe_allow_html=True)
+
