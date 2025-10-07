@@ -2,16 +2,8 @@ import streamlit as st
 import numpy as np
 import cv2
 import os
-import gdown
 from tensorflow.keras.models import load_model
 import joblib
-
-# --------------------------
-# Auto-download models from Google Drive
-# --------------------------
-# --------------------------
-# Auto-download models from Google Drive (safe version)
-# --------------------------
 import requests
 
 def download_from_drive(file_id, dest_path):
@@ -217,4 +209,5 @@ st.markdown("""
 ---
 💡 <span style="color:#1ABC9C;">Powered by U-Net + KBIS + Ensemble Learning (AML)</span> | © 2025 CISKA Research
 """, unsafe_allow_html=True)
+
 
